@@ -13,12 +13,19 @@ class ConsoleUI:
         """Запускает главный цикл консольного меню."""
         print("Добро пожаловать в симулятор службы доставки!")
         while True:
-            self._print_menu()
-            choice = input("Выберите действие (0-6): ").strip()
+            has_orders = bool(self._service.get_all_orders())
+            self._print_menu(has_orders)
+            max_choice = 6 if has_orders else 1
+            choice = input(f"Выберите действие (0-{max_choice}): ").strip()
 
             try:
                 if choice == "1":
                     self._handle_create_order()
+                elif choice == "0":
+                    print("Работа программы завершена. До свидания!")
+                    break
+                elif not has_orders and choice in ("2", "3", "4", "5", "6"):
+                    print("\n[Внимание]: Сначала создайте хотя бы один заказ (пункт 1).")
                 elif choice == "2":
                     self._handle_list_orders()
                 elif choice == "3":
@@ -29,28 +36,25 @@ class ConsoleUI:
                     self._handle_change_status()
                 elif choice == "6":
                     self._handle_add_item_to_existing_order()
-                elif choice == "0":
-                    print("Работа программы завершена. До свидания!")
-                    break
                 else:
-                    print("Ошибка: выберите пункт меню от 0 до 6.")
+                    print(f"Ошибка: выберите пункт меню от 0 до {max_choice}.")
             except ValueError as error:
                 print(f"\n[Ошибка операции]: {error}")
             except Exception as error:
                 print(f"\n[Непредвиденная ошибка]: {error}")
 
-    def _print_menu(self) -> None:
+    def _print_menu(self, has_orders: bool) -> None:
         print("\n" + "=" * 40)
         print("МЕНЮ СЛУЖБЫ ДОСТАВКИ:")
         print("1. Создать новый заказ")
-        print("2. Показать список существующих заказов")
-        print("3. Выбрать способ доставки для заказа")
-        print("4. Назначить курьера на заказ")
-        print("5. Изменить статус заказа")
-        print("6. Добавить позицию в существующий заказ")
+        if has_orders:
+            print("2. Показать список существующих заказов")
+            print("3. Выбрать способ доставки для заказа")
+            print("4. Назначить курьера на заказ")
+            print("5. Изменить статус заказа")
+            print("6. Добавить позицию в существующий заказ")
         print("0. Выход")
         print("=" * 40)
-
     def _read_int(self, prompt: str) -> int:
         """Безопасно считывает целое число с консоли."""
         raw = input(prompt).strip()
@@ -89,8 +93,8 @@ class ConsoleUI:
 
         while True:
             self._add_item_prompt(order.order_id)
-            more = input("Добавить еще один товар? (д/н): ").strip().lower()
-            if more not in ("д", "y", "yes", "да"):
+            more = input("Добавить еще один товар? (да/нет): ").strip().lower()
+            if more not in ("д",  "да"):
                 break
 
         print("\nЗаказ успешно сформирован:")
@@ -131,7 +135,7 @@ class ConsoleUI:
             print("-" * 40)
 
     def _handle_select_delivery(self) -> None:
-        order_id = self._read_int("\nВведите номер заказа: ")
+        order = self._prompt_existing_order()
         print("Доступные способы доставки:")
         print("1. Стандартная доставка курьером (300 руб., бесплатно от 2000 руб., 1-2 дня)")
         print("2. Экспресс-доставка (500 руб. + 10% от суммы, 2-3 часа)")
@@ -147,13 +151,14 @@ class ConsoleUI:
         else:
             raise ValueError("Неверный выбор способа доставки.")
 
-        order = self._service.set_delivery_method(order_id, method)
+        updated_order = self._service.set_delivery_method(order.order_id, method)
         print("\nСпособ доставки установлен!")
         print(f"Стоимость доставки: {order.get_delivery_cost():.2f} руб.")
         print(f"Ориентировочный срок: {method.get_estimated_time()}")
         print(f"Итоговая сумма заказа: {order.get_total_cost():.2f} руб.")
 
     def _handle_assign_courier(self) -> None:
+        order = self._prompt_existing_order()
         order_id = self._read_int("\nВведите номер заказа: ")
         couriers = self._service.get_available_couriers()
         if not couriers:
@@ -163,7 +168,6 @@ class ConsoleUI:
         print("Свободные курьеры:")
         for courier in couriers:
             print(f"  {courier}")
-
         courier_id = self._read_int("Введите ID курьера для назначения: ")
         order = self._service.assign_courier_to_order(order_id, courier_id)
         print("\nКурьер успешно назначен:")
@@ -187,3 +191,10 @@ class ConsoleUI:
         updated_order = self._service.change_order_status(order_id, selected_status)
         print("\nСтатус заказа успешно обновлен:")
         print(updated_order)
+    def _prompt_existing_order(self):
+        """Запрашивает номер заказа и сразу проверяет, существует ли он."""
+        orders = self._service.get_all_orders()
+        available_ids = ", ".join(f"#{o.order_id}" for o in orders)
+        order_id = self._read_int(f"\nВведите номер заказа (доступны: {available_ids}): ")
+        return self._service.get_order_by_id(order_id)
+
