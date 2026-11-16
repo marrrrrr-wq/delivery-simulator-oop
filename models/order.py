@@ -6,6 +6,7 @@ from models.delivery import DeliveryMethod
 
 class Order:
     """Класс заказа, объединяющий клиента, товары, доставку, курьера и статусы."""
+    MAX_ITEM_QUANTITY = 10
 
     ALLOWED_TRANSITIONS = {
         OrderStatus.CREATED: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
@@ -64,12 +65,32 @@ class Order:
         return self._status
 
     def add_item(self, item: OrderItem) -> None:
-        """Добавляет позицию в заказ, если он еще не передан в доставку."""
+        """Добавляет позицию в заказ с проверкой статуса и лимита в 10 штук."""
         if self._status not in (OrderStatus.CREATED, OrderStatus.PROCESSING):
             raise ValueError(
                 f"Нельзя добавлять товары в заказ со статусом '{self._status.value}'."
             )
+
+        if item.quantity > self.MAX_ITEM_QUANTITY:
+            raise ValueError(
+                f"Нельзя заказать больше {self.MAX_ITEM_QUANTITY} шт. позиции '{item.title}'."
+            )
+
+        for index, existing_item in enumerate(self._items):
+            if existing_item.title.lower() == item.title.lower():
+                new_quantity = existing_item.quantity + item.quantity
+                if new_quantity > self.MAX_ITEM_QUANTITY:
+                    raise ValueError(
+                        f"В заказе уже есть {existing_item.quantity} шт. '{item.title}'. "
+                        f"Максимум можно заказать {self.MAX_ITEM_QUANTITY} шт."
+                    )
+                self._items[index] = OrderItem(
+                    existing_item.title, new_quantity, existing_item.price
+                )
+                return
+
         self._items.append(item)
+
 
     def set_delivery_method(self, method: DeliveryMethod) -> None:
         """Устанавливает способ доставки и сбрасывает курьера, если он больше не нужен."""

@@ -103,11 +103,21 @@ class ConsoleUI:
         print(order)
 
     def _add_item_prompt(self, order_id: int) -> None:
-        title = input("Название товара: ")
-        quantity = self._read_int("Количество (шт.): ")
-        price = self._read_float("Цена за единицу (руб.): ")
-        self._service.add_item_to_order(order_id, title, quantity, price)
-        print("Позиция добавлена.")
+        menu = self._service.get_menu()
+        print("\nДоступное меню:")
+        for item_id, (title, price) in menu.items():
+            print(f"  {item_id}. {title} — {price:.2f} руб.")
+
+        while True:
+            try:
+                menu_choice = self._read_int("Выберите номер блюда из меню: ")
+                quantity = self._read_int("Введите количество (от 1 до 10 шт.): ")
+                self._service.add_menu_item_to_order(order_id, menu_choice, quantity)
+                print("Позиция успешно добавлена в заказ.")
+                break
+            except ValueError as error:
+                print(f"[Ошибка]: {error} Попробуйте снова.")
+
 
     def _handle_list_orders(self) -> None:
         orders = self._service.get_all_orders()

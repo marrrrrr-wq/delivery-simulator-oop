@@ -3,6 +3,8 @@ from models.entities import Client, Courier, OrderItem
 from models.delivery import DeliveryMethod
 from models.order import Order
 from models.enums import OrderStatus
+from typing import Dict, List, Optional, Tuple
+
 
 
 class DeliveryService:
@@ -83,3 +85,28 @@ class DeliveryService:
             if courier.courier_id == courier_id:
                 return courier
         raise ValueError(f"Курьер с ID #{courier_id} не найден.")
+
+    MENU: Dict[int, Tuple[str, float]] = {
+        1: ("Пицца Маргарита", 650.0),
+        2: ("Сет суши Филадельфия", 1200.0),
+        3: ("Хинкали с говядиной (3 шт.)", 320.0),
+        4: ("Классический чизбургер", 450.0),
+        5: ("Картофель фри", 190.0),
+    }
+
+    def get_menu(self) -> Dict[int, Tuple[str, float]]:
+        """Возвращает каталог доступных блюд."""
+        return dict(self.MENU)
+
+    def add_menu_item_to_order(
+            self, order_id: int, menu_item_id: int, quantity: int
+    ) -> Order:
+        """Добавляет блюдо из меню в указанный заказ."""
+        if menu_item_id not in self.MENU:
+            raise ValueError(f"Позиция меню #{menu_item_id} не найдена.")
+
+        title, price = self.MENU[menu_item_id]
+        order = self.get_order_by_id(order_id)
+        item = OrderItem(title, quantity, price)
+        order.add_item(item)
+        return order
