@@ -1,11 +1,31 @@
+import re
+
+
 class Person:
+    """Базовый класс для представления человека в системе."""
+
+    NAME_PATTERN = re.compile(r"^[А-Яа-яЁёA-Za-z\s-]+$")
+    PHONE_PATTERN = re.compile(r"^(\+7|8)\d{10}$")
+
     def __init__(self, name: str, phone: str) -> None:
         if not name or not name.strip():
             raise ValueError("Имя не может быть пустым.")
+        clean_name = name.strip()
+        if not self.NAME_PATTERN.match(clean_name):
+            raise ValueError(
+                "Имя должно состоять только из букв (допускаются пробел и дефис)."
+            )
+
         if not phone or not phone.strip():
             raise ValueError("Телефон не может быть пустым.")
-        self._name: str = name.strip()
-        self._phone: str = phone.strip()
+        clean_phone = phone.strip()
+        if not self.PHONE_PATTERN.match(clean_phone):
+            raise ValueError(
+                "Телефон должен быть в формате +7XXXXXXXXXX или 8XXXXXXXXXX (11 цифр)."
+            )
+
+        self._name: str = clean_name
+        self._phone: str = clean_phone
 
     @property
     def name(self) -> str:
@@ -14,6 +34,7 @@ class Person:
     @property
     def phone(self) -> str:
         return self._phone
+
 
 
 class Client(Person):

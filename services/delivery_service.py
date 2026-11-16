@@ -17,9 +17,9 @@ class DeliveryService:
     def _seed_couriers(self) -> None:
         """Добавляет тестовый список курьеров при запуске программы."""
         self._couriers.extend([
-            Courier(1, "Алексей Смирнов", "+7 (999) 111-22-33"),
-            Courier(2, "Мария Иванова", "+7 (999) 444-55-66"),
-            Courier(3, "Дмитрий Кузнецов", "+7 (999) 777-88-99"),
+            Courier(1, "Алексей Смирнов", "+79991112233"),
+            Courier(2, "Мария Иванова", "+79994445566"),
+            Courier(3, "Дмитрий Кузнецов", "+79997778899"),
         ])
 
     def create_order(self, client_name: str, client_phone: str, address: str) -> Order:
